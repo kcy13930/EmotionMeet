@@ -16,6 +16,7 @@ var photo = document.getElementById('photo');
 var photoContext = photo.getContext('2d');
 var snapBtn = document.getElementById('snap');
 var sendBtn = document.getElementById('send');
+var snapAndSendBtn = document.getElementById('snapAndSend');
 
 
 // Contains the stun server URL we will be using.
@@ -54,6 +55,23 @@ socket.on("created", function () {
 });
 
 // Triggered when a room is succesfully joined.
+// Implementing the OnIceCandidateFunction which is part of the RTCPeerConnection Interface.
+function gotStream(stream) {
+  /* use the stream */
+  console.log('getUserMedia video stream URL:', stream);
+  window.stream = stream;
+  userStream = stream;
+  divVideoChatLobby.style = "display:none";
+  userVideo.srcObject = stream;
+  userVideo.onloadedmetadata = function (e) {
+    photo.width = photoContextW = userVideo.videoWidth;
+    photo.height = photoContextH = userVideo.videoHeight;
+    console.log('gotStream with width and height:', photoContextW, photoContextH);
+    userVideo.play();
+    userVideo.classList.add("localVideoInChatting");
+  }
+  show(snapBtn);
+}
 
 socket.on("joined", function () {
   creator = false;
@@ -70,6 +88,16 @@ socket.on("joined", function () {
     });
 });
 
+function gotStream2(stream) {
+  /* use the stream */
+  userStream = stream;
+  divVideoChatLobby.style = "display:none";
+  userVideo.srcObject = stream;
+  userVideo.onloadedmetadata = function (e) {
+    userVideo.play();
+  };
+  socket.emit("ready", roomName);
+}
 // Triggered when a room is full (meaning has 2 people).
 
 socket.on("full", function () {
@@ -84,7 +112,7 @@ socket.on("ready", function () {
     rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
     rtcPeerConnection.ontrack = OnTrackFunction;
     rtcPeerConnection.addTrack(userStream.getTracks()[0], userStream);
-    rtcPeerConnection.addTrack(userStream.getTracks()[1], userStream);
+    //rtcPeerConnection.addTrack(userStream.getTracks()[1], userStream);
     rtcPeerConnection
       .createOffer()
       .then((offer) => {
@@ -113,7 +141,7 @@ socket.on("offer", function (offer) {
     rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
     rtcPeerConnection.ontrack = OnTrackFunction;
     rtcPeerConnection.addTrack(userStream.getTracks()[0], userStream);
-    rtcPeerConnection.addTrack(userStream.getTracks()[1], userStream);
+    //rtcPeerConnection.addTrack(userStream.getTracks()[1], userStream);
     rtcPeerConnection.setRemoteDescription(offer);
     rtcPeerConnection
       .createAnswer()
@@ -133,31 +161,9 @@ socket.on("answer", function (answer) {
   rtcPeerConnection.setRemoteDescription(answer);
 });
 
-// Implementing the OnIceCandidateFunction which is part of the RTCPeerConnection Interface.
-function gotStream(stream) {
-  /* use the stream */
-  userStream = stream;
-  divVideoChatLobby.style = "display:none";
-  userVideo.srcObject = stream;
-  userVideo.onloadedmetadata = function (e) {
-    photo.width = photoContextW = userVideo.videoWidth;
-    photo.height = photoContextH = userVideo.videoHeight;
-    userVideo.play();
-    userVideo.classList.add("localVideoInChatting");
-  }
-  //show(snapBtn);
-}
 
-function gotStream2(stream) {
-  /* use the stream */
-  userStream = stream;
-  divVideoChatLobby.style = "display:none";
-  userVideo.srcObject = stream;
-  userVideo.onloadedmetadata = function (e) {
-    userVideo.play();
-  };
-  socket.emit("ready", roomName);
-}
+
+
 
 function OnIceCandidateFunction(event) {
   console.log("Candidate");
